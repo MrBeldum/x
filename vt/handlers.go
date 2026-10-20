@@ -876,7 +876,16 @@ func (e *Emulator) registerDefaultCsiHandlers() {
 		}
 
 		// Rect is [x, y) which means y is exclusive. So the top margin
-		// is the top of the screen minus one.
+		// is the top of the screen minus one. Clamp the exclusive end so a
+		// bottom margin past the screen (common after a shrink) cannot
+		// scroll off the buffer; ignore the sequence when that leaves an
+		// empty region.
+		if bottom > height {
+			bottom = height
+		}
+		if top-1 >= bottom {
+			return false
+		}
 		e.scr.setVerticalMargins(top-1, bottom)
 
 		// Move the cursor to the top-left of the screen or scroll region
@@ -905,6 +914,16 @@ func (e *Emulator) registerDefaultCsiHandlers() {
 			}
 
 			if left >= right {
+				return false
+			}
+
+			// Clamp the exclusive end so a right margin past the screen
+			// (common after a shrink) cannot scroll off the buffer; ignore
+			// the sequence when that leaves an empty region.
+			if right > width {
+				right = width
+			}
+			if left-1 >= right {
 				return false
 			}
 
